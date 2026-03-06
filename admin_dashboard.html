@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<!-- ──
+  Admin Dashboard Template for PlacementHub
+  - Displays key stats and management tables for students, companies, drives, and applications.
+  - Provides admin controls for approving/rejecting companies and drives, blacklisting users, etc.
+  - Uses Bootstrap 5 for styling and responsiveness.-->
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin Dashboard – PlacementHub</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}"/>
+</head>
+<body class="dash-body">
+
+
+<!-- ── Nav bar ─────────────────────────────────────────────── -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark-custom sticky-top">
+  <div class="container-fluid px-4">
+    <span class="navbar-brand fw-bold">🎓 PlacementHub</span>
+    <div class="d-flex align-items-center gap-3">
+      <span class="badge bg-danger fs-6 px-3 py-2">Admin</span>
+      <span class="text-white-50 small">{{ session.username }}</span>
+      <a href="/logout" class="btn btn-outline-light btn-sm">Logout</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ── Flash Messages ─────────────────────────────────────── -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div class="container-fluid px-4 mt-3">
+      {% for cat, msg in messages %}
+        <div class="alert alert-{{ cat }} alert-dismissible fade show mb-0" role="alert">
+          {{ msg }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
+
+<div class="container-fluid px-4 py-4">
+
+  <h4 class="fw-bold mb-4">🛡️ Admin Dashboard</h4>
+
+  <!-- ── Stat Cards ────────────────────────────────────────── -->
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+      <div class="card stat-card border-0 shadow-sm h-100 border-top border-primary border-4">
+        <div class="card-body d-flex align-items-center gap-3">
+          <div class="stat-icon bg-primary-subtle rounded-3 p-3 fs-3">🎓</div>
+          <div>
+            <div class="fs-2 fw-black">{{ stats.total_students }}</div>
+            <div class="text-muted small">Total Students</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card stat-card border-0 shadow-sm h-100 border-top border-success border-4">
+        <div class="card-body d-flex align-items-center gap-3">
+          <div class="stat-icon bg-success-subtle rounded-3 p-3 fs-3">🏢</div>
+          <div>
+            <div class="fs-2 fw-black">{{ stats.total_companies }}</div>
+            <div class="text-muted small">Companies</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card stat-card border-0 shadow-sm h-100 border-top border-warning border-4">
+        <div class="card-body d-flex align-items-center gap-3">
+          <div class="stat-icon bg-warning-subtle rounded-3 p-3 fs-3">💼</div>
+          <div>
+            <div class="fs-2 fw-black">{{ stats.total_drives }}</div>
+            <div class="text-muted small">Placement Drives</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card stat-card border-0 shadow-sm h-100 border-top border-info border-4">
+        <div class="card-body d-flex align-items-center gap-3">
+          <div class="stat-icon bg-info-subtle rounded-3 p-3 fs-3">📋</div>
+          <div>
+            <div class="fs-2 fw-black">{{ stats.total_apps }}</div>
+            <div class="text-muted small">Applications</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Section Tabs ──────────────────────────────────────── -->
+  <ul class="nav nav-tabs fw-semibold mb-3" id="adminTabs">
+    <li class="nav-item">
+      <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-students">🎓 Students</button>
+    </li>
+    <li class="nav-item">
+      <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-companies">🏢 Companies</button>
+    </li>
+    <li class="nav-item">
+      <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-drives">💼 Drives</button>
+    </li>
+    <li class="nav-item">
+      <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-apps">📋 Applications</button>
+    </li>
+  </ul>
+
+  <div class="tab-content">
+
+    <!-- ════════════ STUDENTS TAB ════════════ -->
+    <div class="tab-pane fade show active" id="tab-students">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+          <span class="fw-bold">All Students ({{ students|length }})</span>
+          <!-- Search students -->
+          <form method="GET" action="/admin/dashboard" class="d-flex gap-2">
+            <input type="hidden" name="q_company" value="{{ q_company }}"/>
+            <input type="text" name="q_student" class="form-control form-control-sm"
+                   placeholder="Search by name, ID, email, phone…" value="{{ q_student }}" style="width:280px;"/>
+            <button type="submit" class="btn btn-primary btn-sm">Search</button>
+            {% if q_student %}
+              <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary btn-sm">Clear</a>
+            {% endif %}
+          </form>
+        </div>
+        <div class="card-body p-0">
+          {% if students %}
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>ID</th><th>Name</th><th>Branch</th><th>CGPA</th>
+                  <th>Email</th><th>Phone</th><th>Skills</th><th>Status</th><th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for s in students %}
+                <tr class="{{ 'table-secondary text-muted' if not s.is_active }}">
+                  <td class="text-muted small">{{ s.id }}</td>
+                  <td class="fw-semibold">{{ s.full_name }}</td>
+                  <td>{{ s.branch }}</td>
+                  <td>{{ s.cgpa }}</td>
+                  <td class="small">{{ s.email }}</td>
+                  <td class="small">{{ s.phone or '—' }}</td>
+                  <td>
+                    {% if s.skills %}
+                      {% for sk in s.skills.split(',')[:2] %}
+                        <span class="badge bg-primary-subtle text-primary">{{ sk.strip() }}</span>
+                      {% endfor %}
+                    {% else %}—{% endif %}
+                  </td>
+                  <td>
+                    {% if s.is_active %}
+                      <span class="badge bg-success">Active</span>
+                    {% else %}
+                      <span class="badge bg-secondary">Blacklisted</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    <!-- Blacklist / Activate -->
+                    <form action="/admin/student/{{ s.id }}/toggle" method="POST" class="d-inline">
+                      <button class="btn btn-sm {{ 'btn-warning' if s.is_active else 'btn-success' }}">
+                        {{ 'Blacklist' if s.is_active else 'Activate' }}
+                      </button>
+                    </form>
+                    <!-- Delete -->
+                    <form action="/admin/student/{{ s.id }}/delete" method="POST" class="d-inline ms-1"
+                          onsubmit="return confirm('Delete this student permanently?')">
+                      <button class="btn btn-sm btn-danger">Delete</button>
+                    </form>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+            <p class="text-center text-muted py-4">No students found.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════ COMPANIES TAB ════════════ -->
+    <div class="tab-pane fade" id="tab-companies">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+          <span class="fw-bold">All Companies ({{ companies|length }})</span>
+          <!-- Search companies -->
+          <form method="GET" action="/admin/dashboard" class="d-flex gap-2">
+            <input type="hidden" name="q_student" value="{{ q_student }}"/>
+            <input type="text" name="q_company" class="form-control form-control-sm"
+                   placeholder="Search by company name…" value="{{ q_company }}" style="width:250px;"/>
+            <button type="submit" class="btn btn-primary btn-sm">Search</button>
+            {% if q_company %}
+              <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary btn-sm">Clear</a>
+            {% endif %}
+          </form>
+        </div>
+        <div class="card-body p-0">
+          {% if companies %}
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>ID</th><th>Company</th><th>HR Contact</th><th>Email</th>
+                  <th>Industry</th><th>Approval</th><th>Account</th><th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for c in companies %}
+                <tr class="{{ 'table-secondary text-muted' if not c.is_active }}">
+                  <td class="text-muted small">{{ c.id }}</td>
+                  <td class="fw-semibold">{{ c.company_name }}</td>
+                  <td class="small">{{ c.hr_contact or '—' }}</td>
+                  <td class="small">{{ c.email }}</td>
+                  <td>{{ c.industry or '—' }}</td>
+                  <td>
+                    {% if c.approval_status == 'approved' %}
+                      <span class="badge bg-success">Approved</span>
+                    {% elif c.approval_status == 'rejected' %}
+                      <span class="badge bg-danger">Rejected</span>
+                    {% else %}
+                      <span class="badge bg-warning text-dark">Pending</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if c.is_active %}
+                      <span class="badge bg-success">Active</span>
+                    {% else %}
+                      <span class="badge bg-secondary">Blacklisted</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    <!-- Approve / Reject registration -->
+                    {% if c.approval_status == 'pending' %}
+                      <form action="/admin/company/{{ c.id }}/approve" method="POST" class="d-inline">
+                        <input type="hidden" name="action" value="approved"/>
+                        <button class="btn btn-sm btn-success">Approve</button>
+                      </form>
+                      <form action="/admin/company/{{ c.id }}/approve" method="POST" class="d-inline ms-1">
+                        <input type="hidden" name="action" value="rejected"/>
+                        <button class="btn btn-sm btn-danger">Reject</button>
+                      </form>
+                    {% elif c.approval_status == 'rejected' %}
+                      <form action="/admin/company/{{ c.id }}/approve" method="POST" class="d-inline">
+                        <input type="hidden" name="action" value="approved"/>
+                        <button class="btn btn-sm btn-success">Approve</button>
+                      </form>
+                    {% else %}
+                      <form action="/admin/company/{{ c.id }}/approve" method="POST" class="d-inline">
+                        <input type="hidden" name="action" value="rejected"/>
+                        <button class="btn btn-sm btn-danger btn-sm">Revoke</button>
+                      </form>
+                    {% endif %}
+                    <!-- Blacklist / Activate -->
+                    <form action="/admin/company/{{ c.id }}/toggle" method="POST" class="d-inline ms-1">
+                      <button class="btn btn-sm {{ 'btn-warning' if c.is_active else 'btn-success' }}">
+                        {{ 'Blacklist' if c.is_active else 'Activate' }}
+                      </button>
+                    </form>
+                    <!-- Delete -->
+                    <form action="/admin/company/{{ c.id }}/delete" method="POST" class="d-inline ms-1"
+                          onsubmit="return confirm('Delete this company and all its data?')">
+                      <button class="btn btn-sm btn-outline-danger">Delete</button>
+                    </form>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+            <p class="text-center text-muted py-4">No companies found.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════ DRIVES TAB ════════════ -->
+    <div class="tab-pane fade" id="tab-drives">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white">
+          <span class="fw-bold">All Placement Drives ({{ drives|length }})</span>
+        </div>
+        <div class="card-body p-0">
+          {% if drives %}
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>ID</th><th>Company</th><th>Job Title</th><th>Package</th>
+                  <th>Deadline</th><th>Status</th><th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for d in drives %}
+                <tr>
+                  <td class="text-muted small">{{ d.id }}</td>
+                  <td class="fw-semibold">{{ d.company_name }}</td>
+                  <td>{{ d.job_title }}</td>
+                  <td>{{ d.package or '—' }}</td>
+                  <td>{{ d.deadline or '—' }}</td>
+                  <td>
+                    {% if d.status == 'approved' %}
+                      <span class="badge bg-success">Approved</span>
+                    {% elif d.status == 'closed' %}
+                      <span class="badge bg-secondary">Closed</span>
+                    {% else %}
+                      <span class="badge bg-warning text-dark">Pending</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if d.status == 'pending' %}
+                      <form action="/admin/drive/{{ d.id }}/status" method="POST" class="d-inline">
+                        <input type="hidden" name="status" value="approved"/>
+                        <button class="btn btn-sm btn-success">Approve</button>
+                      </form>
+                      <form action="/admin/drive/{{ d.id }}/status" method="POST" class="d-inline ms-1">
+                        <input type="hidden" name="status" value="closed"/>
+                        <button class="btn btn-sm btn-danger">Reject</button>
+                      </form>
+                    {% elif d.status == 'approved' %}
+                      <form action="/admin/drive/{{ d.id }}/status" method="POST" class="d-inline">
+                        <input type="hidden" name="status" value="closed"/>
+                        <button class="btn btn-sm btn-warning">Close</button>
+                      </form>
+                    {% else %}
+                      <form action="/admin/drive/{{ d.id }}/status" method="POST" class="d-inline">
+                        <input type="hidden" name="status" value="approved"/>
+                        <button class="btn btn-sm btn-success">Reopen</button>
+                      </form>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+            <p class="text-center text-muted py-4">No drives found.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════ APPLICATIONS TAB ════════════ -->
+    <div class="tab-pane fade" id="tab-apps">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white">
+          <span class="fw-bold">All Applications ({{ applications|length }})</span>
+        </div>
+        <div class="card-body p-0">
+          {% if applications %}
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>ID</th><th>Student</th><th>Job Title</th>
+                  <th>Company</th><th>Applied On</th><th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for a in applications %}
+                <tr>
+                  <td class="text-muted small">{{ a.id }}</td>
+                  <td class="fw-semibold">{{ a.student_name }}</td>
+                  <td>{{ a.job_title }}</td>
+                  <td>{{ a.company_name }}</td>
+                  <td>{{ a.applied_on }}</td>
+                  <td>
+                    {% set sc = {'Applied':'primary','Shortlisted':'warning','Selected':'success','Rejected':'danger'} %}
+                    <span class="badge bg-{{ sc.get(a.status, 'secondary') }}">{{ a.status }}</span>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+            <p class="text-center text-muted py-4">No applications yet.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /tab-content -->
+</div><!-- /container -->
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

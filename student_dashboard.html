@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Student Dashboard – PlacementHub</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}"/>
+</head>
+<body class="dash-body">
+
+<!-- ── Navbar ─────────────────────────────────────────────── -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark-custom sticky-top">
+  <div class="container-fluid px-4">
+    <span class="navbar-brand fw-bold">🎓 PlacementHub</span>
+    <div class="d-flex align-items-center gap-3">
+      <span class="badge bg-purple fs-6 px-3 py-2">Student</span>
+      <span class="text-white-50 small">{{ session.username }}</span>
+      <a href="/logout" class="btn btn-outline-light btn-sm">Logout</a>
+    </div>
+  </div>
+</nav>
+
+<!-- Flash Messages -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div class="container-fluid px-4 mt-3">
+      {% for cat, msg in messages %}
+        <div class="alert alert-{{ cat }} alert-dismissible fade show mb-0">
+          {{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
+
+<div class="container-fluid px-4 py-4">
+
+  <!-- ── Profile Hero Card ────────────────────────────────── -->
+  {% if student %}
+  <div class="profile-hero-card mb-4 p-4 rounded-3 text-white d-flex align-items-center gap-4">
+    <div class="profile-avatar-lg">{{ student.full_name[0] }}</div>
+    <div>
+      <h4 class="fw-bold mb-1">{{ student.full_name }}</h4>
+      <p class="mb-2 opacity-75">{{ student.email }}  •  {{ student.phone or 'No phone' }}</p>
+      <div class="d-flex gap-2 flex-wrap">
+        <span class="badge bg-white text-dark">📚 {{ student.branch }}</span>
+        <span class="badge bg-white text-dark">⭐ CGPA: {{ student.cgpa }}</span>
+        {% if student.skills %}
+          {% for sk in student.skills.split(',')[:3] %}
+            <span class="badge bg-white text-primary">{{ sk.strip() }}</span>
+          {% endfor %}
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- ── Section Tabs ──────────────────────────────────────── -->
+  <ul class="nav nav-tabs fw-semibold mb-3" id="studentTabs">
+    <li class="nav-item">
+      <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-drives">💼 Placement Drives</button>
+    </li>
+    <li class="nav-item">
+      <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-applications">📋 My Applications</button>
+    </li>
+    <li class="nav-item">
+      <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-history">🏆 Placement History</button>
+    </li>
+    <li class="nav-item">
+      <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-profile">👤 Edit Profile</button>
+    </li>
+  </ul>
+
+  <div class="tab-content">
+
+    <!-- ════════════ DRIVES TAB ════════════ -->
+    <div class="tab-pane fade show active" id="tab-drives">
+      <div class="row g-3">
+        {% if drives %}
+          {% for d in drives %}
+          <div class="col-md-6 col-lg-4">
+            <div class="card h-100 border-0 shadow-sm drive-card">
+              <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                  <h6 class="fw-bold mb-0">{{ d.job_title }}</h6>
+                  <span class="badge bg-success">Approved</span>
+                </div>
+                <p class="text-muted small mb-2">🏢 {{ d.company_name }}</p>
+                {% if d.package %}
+                  <p class="fw-bold text-success mb-2">💰 {{ d.package }}</p>
+                {% endif %}
+                {% if d.job_description %}
+                  <p class="small text-muted mb-2">{{ d.job_description[:100] }}{% if d.job_description|length > 100 %}…{% endif %}</p>
+                {% endif %}
+                {% if d.eligibility %}
+                  <div class="alert alert-info py-1 px-2 small mb-2">
+                    📌 <strong>Eligibility:</strong> {{ d.eligibility }}
+                  </div>
+                {% endif %}
+                {% if d.deadline %}
+                  <p class="small text-muted mb-3">📅 Deadline: {{ d.deadline }}</p>
+                {% endif %}
+
+                <!-- Check if already applied -->
+                {% set applied = false %}
+                {% if student %}
+                  {% for a in applications %}
+                    {% if a.drive_id == d.id %}{% set applied = true %}{% endif %}
+                  {% endfor %}
+                {% endif %}
+
+                <form action="/student/apply/{{ d.id }}" method="POST">
+                  {% if applied %}
+                    <button type="button" class="btn btn-secondary w-100" disabled>✅ Applied</button>
+                  {% else %}
+                    <button type="submit" class="btn btn-primary w-100">Apply Now →</button>
+                  {% endif %}
+                </form>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        {% else %}
+          <div class="col-12 text-center py-5 text-muted">
+            <div class="fs-1 mb-2">🔍</div>
+            <p>No approved placement drives available right now.</p>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- ════════════ MY APPLICATIONS TAB ════════════ -->
+    <div class="tab-pane fade" id="tab-applications">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white fw-bold">My Applications ({{ applications|length }})</div>
+        <div class="card-body p-0">
+          {% if applications %}
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>#</th><th>Job Title</th><th>Company</th>
+                  <th>Package</th><th>Applied On</th><th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for a in applications %}
+                <tr>
+                  <td class="text-muted">{{ loop.index }}</td>
+                  <td class="fw-semibold">{{ a.job_title }}</td>
+                  <td>{{ a.company_name }}</td>
+                  <td>{{ a.package or '—' }}</td>
+                  <td>{{ a.applied_on }}</td>
+                  <td>
+                    {% set sc = {'Applied':'primary','Shortlisted':'warning','Selected':'success','Rejected':'danger'} %}
+                    <span class="badge bg-{{ sc.get(a.status, 'secondary') }}">{{ a.status }}</span>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+            <p class="text-center text-muted py-4">You haven't applied to any drives yet.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════ PLACEMENT HISTORY TAB ════════════ -->
+    <div class="tab-pane fade" id="tab-history">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white fw-bold">🏆 Placement History</div>
+        <div class="card-body p-0">
+          {% set history = applications | selectattr('status', 'in', ['Selected', 'Rejected', 'Shortlisted']) | list %}
+          {% if history %}
+          <div class="table-responsive">
+            <table class="table align-middle mb-0">
+              <thead class="table-light">
+                <tr><th>Job Title</th><th>Company</th><th>Package</th><th>Applied On</th><th>Outcome</th></tr>
+              </thead>
+              <tbody>
+                {% for a in history %}
+                <tr>
+                  <td class="fw-semibold">{{ a.job_title }}</td>
+                  <td>{{ a.company_name }}</td>
+                  <td>{{ a.package or '—' }}</td>
+                  <td>{{ a.applied_on }}</td>
+                  <td>
+                    {% if a.status == 'Selected' %}
+                      <span class="badge bg-success">🎉 Selected</span>
+                    {% elif a.status == 'Shortlisted' %}
+                      <span class="badge bg-warning text-dark">⏳ Shortlisted</span>
+                    {% else %}
+                      <span class="badge bg-danger">❌ Rejected</span>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+            <p class="text-center text-muted py-4">No placement history yet.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════ EDIT PROFILE TAB ════════════ -->
+    <div class="tab-pane fade" id="tab-profile">
+      {% if student %}
+      <div class="card border-0 shadow-sm" style="max-width:640px;">
+        <div class="card-header bg-white fw-bold">👤 Edit My Profile</div>
+        <div class="card-body">
+          <form action="/student/profile/update" method="POST">
+            <div class="row g-3 mb-3">
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Full Name</label>
+                <input type="text" name="full_name" class="form-control" value="{{ student.full_name }}" required/>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Email</label>
+                <input type="email" name="email" class="form-control" value="{{ student.email }}" required/>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Phone</label>
+                <input type="text" name="phone" class="form-control" value="{{ student.phone or '' }}"/>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Branch</label>
+                <select name="branch" class="form-select" required>
+                  {% for b in ['Computer Science','Information Technology','Electronics & Communication','Mechanical Engineering','Civil Engineering','Electrical Engineering','MBA','MCA'] %}
+                    <option {{ 'selected' if student.branch == b }}>{{ b }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">CGPA</label>
+                <input type="number" name="cgpa" class="form-control" step="0.01" min="0" max="10" value="{{ student.cgpa }}" required/>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Skills (comma separated)</label>
+                <input type="text" name="skills" class="form-control" value="{{ student.skills or '' }}" placeholder="Python, Java, SQL"/>
+              </div>
+              <div class="col-12">
+                <label class="form-label fw-semibold">Resume Link (Google Drive / URL)</label>
+                <input type="text" name="resume_url" class="form-control" value="{{ student.resume_url or '' }}" placeholder="https://drive.google.com/…"/>
+              </div>
+            </div>
+            <button type="submit" class="btn btn-primary fw-semibold">Save Changes</button>
+          </form>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+
+  </div><!-- /tab-content -->
+</div><!-- /container -->
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

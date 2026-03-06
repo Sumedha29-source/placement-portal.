@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>PlacementHub – Login / Register</title>
+  <!-- Bootstrap 5 CDN (required by spec) -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}"/>
+</head>
+<body class="auth-body">
+
+<div class="auth-wrapper">
+
+  <!-- ── Brand header ─────────────────────────────────── -->
+  <div class="text-center mb-4">
+    <h1 class="auth-brand">🎓 <span>Placement</span>Hub</h1>
+    <p class="text-muted">Campus Recruitment Management System</p>
+  </div>
+
+  <!-- ── Flash Messages ───────────────────────────────── -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for cat, msg in messages %}
+        <div class="alert alert-{{ cat }} alert-dismissible fade show" role="alert">
+          {{ msg }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+
+  <!-- ── Tab nav: Login / Register ────────────────────── -->
+  <!-- Bootstrap tabs — no custom JS needed for tab switching -->
+  <ul class="nav nav-tabs mb-4" id="authTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+      <button class="nav-link active" id="login-tab"
+              data-bs-toggle="tab" data-bs-target="#loginPane"
+              type="button" role="tab">Login</button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link" id="register-tab"
+              data-bs-toggle="tab" data-bs-target="#registerPane"
+              type="button" role="tab">Register</button>
+    </li>
+  </ul>
+
+  <div class="tab-content" id="authTabContent">
+
+    <!-- ══ LOGIN PANE ════════════════════════════════════ -->
+    <div class="tab-pane fade show active" id="loginPane" role="tabpanel">
+      <div class="auth-card p-4">
+        <h5 class="mb-3 fw-bold">Welcome back 👋</h5>
+        <form action="/login" method="POST">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Username</label>
+            <input type="text" name="username" class="form-control" placeholder="Enter username" required/>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Password</label>
+            <input type="password" name="password" class="form-control" placeholder="Enter password" required/>
+          </div>
+          <button type="submit" class="btn btn-primary w-100 fw-semibold">Sign In</button>
+        </form>
+
+        <!-- Demo hint -->
+        <div class="alert alert-info mt-3 mb-0 py-2 small">
+          <strong>Demo admin:</strong> username <code>admin</code> / password <code>admin123</code>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ REGISTER PANE ══════════════════════════════════ -->
+    <div class="tab-pane fade" id="registerPane" role="tabpanel">
+      <div class="auth-card p-4">
+        <h5 class="mb-3 fw-bold">Create an account</h5>
+
+        <!-- Role picker — Bootstrap pills, no JS required -->
+        <ul class="nav nav-pills mb-3" id="roleTabs" role="tablist">
+          <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="student-tab"
+                    data-bs-toggle="pill" data-bs-target="#studentFields"
+                    type="button">🎓 Student</button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" id="company-tab"
+                    data-bs-toggle="pill" data-bs-target="#companyFields"
+                    type="button">🏢 Company</button>
+          </li>
+        </ul>
+
+        <!-- ── Student registration ── -->
+        <div class="tab-content">
+          <div class="tab-pane fade show active" id="studentFields">
+            <form action="/register" method="POST">
+              <input type="hidden" name="role" value="student"/>
+              <div class="row g-2 mb-2">
+                <div class="col">
+                  <label class="form-label fw-semibold">Username</label>
+                  <input type="text" name="username" class="form-control" required/>
+                </div>
+                <div class="col">
+                  <label class="form-label fw-semibold">Password</label>
+                  <input type="password" name="password" class="form-control" required/>
+                </div>
+              </div>
+              <div class="mb-2">
+                <label class="form-label fw-semibold">Full Name</label>
+                <input type="text" name="full_name" class="form-control" placeholder="e.g. Rahul Sharma" required/>
+              </div>
+              <div class="row g-2 mb-2">
+                <div class="col">
+                  <label class="form-label fw-semibold">Email</label>
+                  <input type="email" name="email" class="form-control" required/>
+                </div>
+                <div class="col">
+                  <label class="form-label fw-semibold">Phone</label>
+                  <input type="text" name="phone" class="form-control" placeholder="10-digit number"/>
+                </div>
+              </div>
+              <div class="row g-2 mb-2">
+                <div class="col">
+                  <label class="form-label fw-semibold">Branch</label>
+                  <select name="branch" class="form-select" required>
+                    <option value="">Select branch</option>
+                    <option>Computer Science</option>
+                    <option>Information Technology</option>
+                    <option>Electronics &amp; Communication</option>
+                    <option>Mechanical Engineering</option>
+                    <option>Civil Engineering</option>
+                    <option>Electrical Engineering</option>
+                    <option>MBA</option>
+                    <option>MCA</option>
+                  </select>
+                </div>
+                <div class="col">
+                  <label class="form-label fw-semibold">CGPA</label>
+                  <input type="number" name="cgpa" class="form-control" step="0.01" min="0" max="10" placeholder="e.g. 8.5" required/>
+                </div>
+              </div>
+              <div class="mb-3">
+                <label class="form-label fw-semibold">Skills (comma separated)</label>
+                <input type="text" name="skills" class="form-control" placeholder="Python, Java, React"/>
+              </div>
+              <button type="submit" class="btn btn-success w-100 fw-semibold">Register as Student</button>
+            </form>
+          </div>
+
+          <!-- ── Company registration ── -->
+          <div class="tab-pane fade" id="companyFields">
+            <form action="/register" method="POST">
+              <input type="hidden" name="role" value="company"/>
+              <div class="row g-2 mb-2">
+                <div class="col">
+                  <label class="form-label fw-semibold">Username</label>
+                  <input type="text" name="username" class="form-control" required/>
+                </div>
+                <div class="col">
+                  <label class="form-label fw-semibold">Password</label>
+                  <input type="password" name="password" class="form-control" required/>
+                </div>
+              </div>
+              <div class="mb-2">
+                <label class="form-label fw-semibold">Company Name</label>
+                <input type="text" name="company_name" class="form-control" placeholder="e.g. TechCorp Pvt. Ltd." required/>
+              </div>
+              <div class="row g-2 mb-2">
+                <div class="col">
+                  <label class="form-label fw-semibold">HR Contact</label>
+                  <input type="text" name="hr_contact" class="form-control" placeholder="HR name / phone"/>
+                </div>
+                <div class="col">
+                  <label class="form-label fw-semibold">Email</label>
+                  <input type="email" name="email" class="form-control" required/>
+                </div>
+              </div>
+              <div class="row g-2 mb-2">
+                <div class="col">
+                  <label class="form-label fw-semibold">Website</label>
+                  <input type="text" name="website" class="form-control" placeholder="https://company.com"/>
+                </div>
+                <div class="col">
+                  <label class="form-label fw-semibold">Industry</label>
+                  <select name="industry" class="form-select">
+                    <option value="">Select</option>
+                    <option>Information Technology</option>
+                    <option>Finance &amp; Banking</option>
+                    <option>E-Commerce</option>
+                    <option>Healthcare</option>
+                    <option>Manufacturing</option>
+                    <option>Consulting</option>
+                    <option>Other</option>
+                  </select>
+                </div>
+              </div>
+              <div class="mb-3">
+                <label class="form-label fw-semibold">Company Description</label>
+                <textarea name="description" class="form-control" rows="2" placeholder="Brief overview of your company..."></textarea>
+              </div>
+              <button type="submit" class="btn btn-success w-100 fw-semibold">Register Company</button>
+              <p class="text-muted small mt-2 text-center">
+                ⚠️ Company accounts require admin approval before you can log in.
+              </p>
+            </form>
+          </div>
+        </div><!-- /tab-content -->
+
+      </div>
+    </div>
+    <!-- /register pane -->
+
+  </div>
+</div><!-- /auth-wrapper -->
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
