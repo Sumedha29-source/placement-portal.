@@ -13,7 +13,7 @@ A full-stack web application built with **Flask** that manages campus recruitmen
 placement-portal/
 │
 ├── app.py                        ← All Flask routes and backend logic
-├── setup_db.py                   ← Run once to create database.db
+├── database.py                   ← Run once to create database.db
 ├── database.db                   ← SQLite database (auto-created by setup_db.py)
 │
 ├── templates/
@@ -23,7 +23,6 @@ placement-portal/
 │   └── company_dashboard.html    ← Company portal
 │
 └── static/
-    └── css/
         └── style.css             ← Custom styles (built on top of Bootstrap 5)
 ```
 
